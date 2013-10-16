@@ -107,11 +107,16 @@ class SyncObject extends AppModel {
                 }
                 break;
             case 'delete':
+                $id = $this->LdapObject->id;
                 $deleteResult = $this->LdapObject->delete($this->LdapObject->id);
                 if ($deleteResult) {
-                    $this->log('SYNC: Deleted LDAP Object: ' . $this->LdapObject->id, LOG_INFO);
+                    $this->log('SYNC: Deleted LDAP Object: ' . $id, LOG_INFO);
                 } else {
                     $this->log('SYNC: Failed to delete LDAP Object: ' . $this->LdapObject->id, LOG_ERR);
+                    $ldapError = $this->LdapObject->getLdapError();
+                    if (!empty($ldapError)) {
+                        $this->log($ldapError, LOG_ERR);
+                    }
                 }
                 break;
             default:
@@ -159,17 +164,21 @@ class SyncObject extends AppModel {
         $retAttrs = array_keys($this->syncMap);
         $userExistsCheck = $this->LdapObject->find('all', array( 'conditions' => $filter, 'fields' => $retAttrs ));
         if ($userExistsCheck) {
-            if ($userExistsCheck[0]['count'] > 1) {
+            if ($userExistsCheck[0][0]['count'] > 1) {
                 $this->log('SYNC: Duplicate or corrupt data in the LDAP repository. Multiple entries found for the following Salesforce Id: ' . $this->sforceData['Id']);
+                return false;
+            } elseif (!is_array($userExistsCheck) || count($userExistsCheck) != 1) {
+                $this->log('SYNC: Malformed response from LDAP repository. Salesforce Id: ' . $this->sforceData['Id']);
                 return false;
             }
             if ($this->sforceData['IsDeleted'] == 'true') {
                 $this->syncOperation = 'delete';
             } else {
                 $this->syncOperation = 'update';
-                $this->ldapData = $userExistsCheck['LdapObject'];
+                $this->ldapData = $userExistsCheck[0]['LdapObject'];
             }
-            $this->LdapObject->id = $userExistsCheck['LdapObject']['dn'];
+            $this->LdapObject->id = $userExistsCheck[0]['LdapObject']['dn'];
+            $this->LdapObject->primaryKey = 'dn';
         } else {
             $this->syncOperation = 'create';
         }

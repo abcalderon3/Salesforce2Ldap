@@ -124,7 +124,7 @@ class SalesforceSource extends DataSource {
             $this->connect();
             $options = new QueryOptions($this->config['queryBatchSize']);
             $this->client->setQueryOptions($options);
-            $response = $this->client->query($Query);
+            $response = $this->client->queryAll($Query);
             $queryResult = new QueryResult($response);
         } catch (Exception $e) {
             echo $e->faultstring;
