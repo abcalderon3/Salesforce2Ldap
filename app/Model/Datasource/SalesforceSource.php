@@ -28,7 +28,7 @@ class SalesforceSource extends DataSource {
      * 
      * @var string 
      */
-    public $description = 'Salesforce Enterprise SOAP Client DataSource';
+    public $description = 'Salesforce Partner SOAP Client DataSource';
 
     /**
      * The SoapClient instance 
@@ -110,7 +110,7 @@ class SalesforceSource extends DataSource {
      * @return array List of SOAP methods 
      */
     public function listSources($data = null) {
-        return $this->client->__getFunctions();
+        return $this->client->getFunctions();
     }
 
     /**
@@ -156,15 +156,66 @@ class SalesforceSource extends DataSource {
      * @return mixed Returns the soql object array result on success, false on failure 
      */
     public function delete($Id = null) {
-        $response = false;
         $this->error = false;
         try {
             $this->connect();
-            $response = $this->client->delete($Id);
+            $responseArray = $this->client->delete($Id);
+            $response = $responseArray[0];
         } catch (Exception $e) {
             echo $e->faultstring;
         }
-        return($response);
+        return($response->success);
+    }
+
+    /**
+     * Implement the C in CRUD. Calls to ``Model::save()`` without $model->id set arrive here.
+     * 
+     * Creates an SObject with the data passed from Model, and then passes data to upsert().
+     * Retains the idempotent nature of upsert().
+     * 
+     * If you want to specify the SObject type or the external ID to be used in Upsert,
+     * pass them in $fields['type'] and $fields['extId'].
+     * 
+     * @return type
+     */
+    public function create($model, $fields = null, $values = null) {
+        $data = array_combine($fields, $values);
+        $type = 'Contact';
+        if (isset($data['type'])) {
+            $type = $data['type'];
+            unset($data['type']);
+        }
+        
+        try {
+            $this->connect();
+            $sObject = new SObject();
+            $sObject->fields = $data;
+            $sObject->type = $type;
+            $responseArray = $this->client->create(array($sObject));
+            $response = $responseArray[0];
+        } catch (Exception $e) {
+            echo $e->faultstring;
+        }
+        
+        return($response->success);
+    }
+    
+    /**
+     * update the SOAP server with the given method and parameters 
+     * pass the sObject query as the only pram 
+     * @return mixed Returns the soql result object array result on success, false on failure 
+     */
+    public function upsert($localId = 'ExtId__c', array $sObjects = null) {
+
+        $this->error = false;
+        try {
+            $this->connect();
+            $response = $this->client->upsert($localId, $sObjects);
+        } catch (Exception $e) {
+            print_r($this->client->getLastRequest());
+            echo $e->faultstring;
+        }
+        return($response->success);
     }
 
     /**
@@ -172,35 +223,24 @@ class SalesforceSource extends DataSource {
      * pass the sObject query as the only pram 
      * @return mixed Returns the soql result object array result on success, false on failure 
      */
-    public function upsert($localid = 'upsert', $sOBject = null, $type = 'Contact') {
-
+    public function update($sObject = null, $type = 'Contact') {
         $this->error = false;
         try {
             $this->connect();
-            $this->client->upsert($localid, $sObject, $type);
+            if (!isset($sObject->type)) {
+                $sObject->type = $type;
+            }
+            $responseArray = $this->client->update(array($sObject));
+            $response = $responseArray[0];
         } catch (Exception $e) {
-            print_r($mySforceConnection->getLastRequest());
+            print_r($this->client->getLastRequest());
             echo $e->faultstring;
         }
-        return($response);
+        return($response->success);
     }
-
-    /**
-     * update the SOAP server with the given method and parameters 
-     * pass the sObject query as the only pram 
-     * @return mixed Returns the soql result object array result on success, false on failure 
-     */
-    public function update($sOBject = null, $type = 'Contact') {
-        $response = false;
-        $this->error = false;
-        try {
-            $this->connect();
-            $response = $this->client->update(array($sOBject), $type);
-        } catch (Exception $e) {
-            print_r($mySforceConnection->getLastRequest());
-            echo $e->faultstring;
-        }
-        return($response);
+    
+    public function fullTableName($model, $quote = true) {
+        return null;
     }
 
     /**
@@ -209,7 +249,7 @@ class SalesforceSource extends DataSource {
      * @return string The last SOAP response 
      */
     public function getResponse() {
-        return $this->client->__getLastResponse();
+        return $this->client->getLastResponse();
     }
 
     /**
@@ -218,7 +258,7 @@ class SalesforceSource extends DataSource {
      * @return string The last SOAP request 
      */
     public function getRequest() {
-        return $this->client->__getLastRequest();
+        return $this->client->getLastRequest();
     }
 
     /**

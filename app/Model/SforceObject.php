@@ -18,28 +18,19 @@ class SforceObject extends AppModel {
         // ABC3TODO: Modify to take better advantage of the batched processing from Salesforce
         $resultSet = $this->queryBatch($SOQL);
         
-        $syncResults = array();
+        $syncResults = array(
+            'create' => array(),
+            'update' => array(),
+            'delete' => array()
+        );
         
         foreach ($resultSet as $result) {
             $this->SyncObject->newSyncObject($result);
             $this->SyncObject->performSyncOperation();
-            array_push($syncResults, $this->SyncObject->getSyncResult());
+            $syncResults = array_merge_recursive($syncResults, $this->SyncObject->getSyncResult());
         }
         
         return $syncResults;
-    }
-    
-    function first10account() {
-        $SOQL = "SELECT 
-            a.Id,
-            a.Name,
-            a.AccountNumber
-            FROM Account a 
-            WHERE  IsDeleted = Null 
-            Limit 10";
-        $resultSet = $this->queryBatch($SOQL);
-        
-        return $resultSet;
     }
     
     function getContacts() {

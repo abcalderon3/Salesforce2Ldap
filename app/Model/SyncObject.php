@@ -49,9 +49,9 @@ class SyncObject extends AppModel {
         $this->syncMap[$this->ldapSforceIdAttr] = 'Id';
         $this->_setGenerationFlags();
         
+        $this->LdapObject->setLdapContext();
+        
         $this->prepareSyncOperation();
-        
-        
     }
     
     public function prepareSyncOperation() {
@@ -82,9 +82,9 @@ class SyncObject extends AppModel {
                 $data['LdapObject']['objectclass'] = $this->ldapObjectClass;
                 $createResult = $this->LdapObject->save($data);
                 if ($createResult) {
-                    $this->log('SYNC: Created LDAP Object: ' . $this->LdapObject->id, LOG_INFO);
+                    $this->log('SYNC: Created LDAP Object: ' . $createResult['LdapObject']['dn'], LOG_INFO);
                 } else {
-                    $this->log('SYNC: Failed to create LDAP Object: ' . $this->LdapObject->id . '. Salesforce ID: '. $this->sforceData['Id'] . '. LDAP Error: ' . $this->LdapObject->getLdapError() . '.', LOG_ERR);
+                    $this->log('SYNC: Failed to create LDAP Object: ' . $dn . '. Salesforce ID: '. $this->sforceData['Id'] . '. LDAP Error: ' . $this->LdapObject->getLdapError() . '.', LOG_ERR);
                 }
                 break;
             case 'update':
@@ -179,7 +179,7 @@ class SyncObject extends AppModel {
             }
             $this->LdapObject->id = $userExistsCheck[0]['LdapObject']['dn'];
             $this->LdapObject->primaryKey = 'dn';
-        } else {
+        } elseif ($this->syncOperation != 'delete') {
             $this->syncOperation = 'create';
         }
         
@@ -200,6 +200,11 @@ class SyncObject extends AppModel {
         return $mappedData;
     }
     
+    /**
+     * Returns a report of what the items affected.
+     * 
+     * @return array $syncResult
+     */
     public function getSyncResult() {
         $syncResult = array(
             $this->syncOperation => array(

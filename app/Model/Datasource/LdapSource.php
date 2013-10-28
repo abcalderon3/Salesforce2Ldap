@@ -729,14 +729,27 @@ class LdapSource extends DataSource {
 	
 	/**
 	 * Returns a formatted error message from previous database operation.
+         * 
+         * TODO: Redo this erroring logic, since this always seems to produce SUCCESS. (See below).
+         * The ldap_errno() function should be called after each ldap_add, 
+         * ldap_modify, and ldap_delete function because any ldap_read function
+         * overwrites the last ldap error.
 	 *
 	 * @return string Error message with error number
 	 */
 	function lastError() {
-		if (ldap_errno($this->database)) {
-			return 'LDAP ERROR ' . ldap_errno($this->database) . ': ' . ldap_error($this->database);
-		}
-		return null;
+            $ldapErrNo = ldap_errno($this->database);
+            $ldapError = ldap_error($this->database);
+            
+            if ($ldapErrNo == 0) {
+                $error = 'LDAP SUCCESS';
+            } elseif (!empty($ldapErrNo) && !empty($ldapError)) {
+                $error = 'LDAP ERROR ' . $ldapErrNo . ': ' . $ldapError;
+            } else {
+                $error = 'LDAP ERROR MESSAGE NOT FOUND';
+            }
+            
+            return $error;
 	}
 
 	/**
@@ -1180,7 +1193,9 @@ class LdapSource extends DataSource {
 					if(!$res){
 						$res = false;
 						$errMsg = ldap_error($this->database);
-						$this->log("Query Params Failed:".print_r($queryData,true).' Error: '.$errMsg,'ldap.error');
+                                                $reportQueryData = $queryData;
+                                                unset($reportQueryData['fields'], $reportQueryData['order']);
+						$this->log("Query Params Failed:".print_r($reportQueryData,true).' Error: '.$errMsg,'ldap.error');
 						$this->count = 0;
 					}else{
 						$this->count = ldap_count_entries($this->database, $res);
@@ -1473,5 +1488,16 @@ class LdapSource extends DataSource {
 		$schemaEntry = ldap_get_entries($this->database, $checkDN);
 		$this->SchemaDN = $schemaEntry[0]['subschemasubentry'][0];
 	}
+    
+    /**
+     * Required for compatibility with CakeTestFixture
+     * 
+     * @param type $model
+     * @param type $quote
+     * @return null
+     */
+    public function fullTableName($model, $quote = true) {
+        return null;
+    }
 } // LdapSource
 ?>

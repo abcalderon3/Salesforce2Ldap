@@ -1,4 +1,6 @@
 <?php
+App::uses('AppController', 'Controller');
+
 class SforceObjectsController extends AppController {
 
 	var $name = 'SforceObjects';
