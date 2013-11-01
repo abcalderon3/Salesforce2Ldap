@@ -150,6 +150,9 @@ class LdapSource extends DataSource {
         
         public $affected = '';
         public $_queriesLogMax = 100;
+        public $_queriesLog = array();
+        public $_queriesCnt = 0;
+        public $_queriesTime;
 
 /**
  * Constructor
@@ -760,7 +763,8 @@ class LdapSource extends DataSource {
 	 */
 	function lastNumRows() {
 		if ($this->_result and is_resource($this->_result)) {
-			return @ ldap_count_entries($this->database, $this->_result);
+                    $numRows = @ ldap_count_entries($this->database, $this->_result);
+                    return $numRows;
 		}
 		return null;
 	}
@@ -1143,13 +1147,13 @@ class LdapSource extends DataSource {
 	return(preg_match($pattern, $targetDN));
 	}
 	
-	function _executeQuery($queryData = array (), $cache = true){
+	function _executeQuery($queryData = array (), $cache = false){
 		$t = microtime(true);
 		
 	$pattern = '/,[ \t]+(\w+)=/';
 	$queryData['targetDn'] = preg_replace($pattern, ',$1=',$queryData['targetDn']);	
 		if($this->checkBaseDn($queryData['targetDn']) == 0){
-		$this->log("Missing BaseDN in ". $queryData['targetDn'],'debug');
+		// $this->log("Missing BaseDN in ". $queryData['targetDn'],'debug');
 			
 			if($queryData['targetDn'] != null){
 				$seperator = (substr($queryData['targetDn'], -1) == ',') ? '' : ',';
@@ -1167,6 +1171,7 @@ class LdapSource extends DataSource {
 		}
 		
 		$query = $this->_queryToString($queryData);
+                // TODO: The Model needs to be able to set $cache. For cases of two save() operations in a row, the cache prevents the most up-to-date data to come through from Ldap.
 		if ($cache && isset ($this->_queryCache[$query])) {
 			if (strpos(trim(strtolower($query)), $queryData['type']) !== false) {
 				$res = $this->_queryCache[$query];

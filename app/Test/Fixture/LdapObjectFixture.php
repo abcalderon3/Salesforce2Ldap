@@ -42,7 +42,7 @@ class LdapObjectFixture extends CakeTestFixture {
                     $this->model->primaryKey = 'dn';
                     $deleteResult = $db->delete($this->model);
                     if (!$deleteResult) {
-                       $error = $db->getLdapError();
+                       $error = $db->lastError();
                     }
                 }
             }

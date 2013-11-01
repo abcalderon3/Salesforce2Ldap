@@ -27,5 +27,10 @@ class LdapObject extends AppModel {
         $lastError = $ldap->lastError();
         return $lastError;
     }
+    
+    public function getLdapConfig() {
+        $ldap = $this->getDataSource();
+        return $ldap->config;
+    }
 }
 ?>

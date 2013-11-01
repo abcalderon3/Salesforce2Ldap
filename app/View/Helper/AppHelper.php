@@ -31,4 +31,14 @@ App::uses('Helper', 'View');
  * @package       app.View.Helper
  */
 class AppHelper extends Helper {
+    
+    public function getSyncResultsTable($op) {
+        echo '<table>';
+        echo $this->tableHeaders(array('Salesforce ID','LDAP DN'));
+        foreach ($op as $key => $value) {
+            echo $this->tableCells(array($key, $value));
+        }
+        echo '</table>';
+    }
+    
 }

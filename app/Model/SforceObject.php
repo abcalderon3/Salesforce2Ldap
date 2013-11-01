@@ -65,6 +65,15 @@ class SforceObject extends AppModel {
         
         return $resultSet;
     }
+    
+    public function getSforceConfig() {
+        $sforce = $this->getDataSource();
+        return $sforce->config;
+    }
+    
+    public function getSyncPara() {
+        return $this->SyncObject->getSyncPara();
+    }
 
 }
 

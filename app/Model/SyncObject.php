@@ -17,7 +17,7 @@ class SyncObject extends AppModel {
      * 
      * @var string $syncOperation
      */
-    public $syncOperation = 'create';
+    public $syncOperation = 'nothing';
     
     // protected $objectDN = NULL;
     
@@ -44,6 +44,7 @@ class SyncObject extends AppModel {
     );
     
     public function newSyncObject(array $result) {
+        $this->_flushVars();
         $this->sforceData = $result;
         
         $this->syncMap[$this->ldapSforceIdAttr] = 'Id';
@@ -119,6 +120,9 @@ class SyncObject extends AppModel {
                     }
                 }
                 break;
+            case 'nothing':
+                $this->log('SYNC: No action performed on record: ' . $this->sforceData['Id'], LOG_DEBUG);
+                break;
             default:
                 $this->log('SYNC: No operation found for Salesforce Id "' . $this->sforceData['Id'] . '". This object was not synced.', LOG_INFO);
         }
@@ -132,6 +136,18 @@ class SyncObject extends AppModel {
         }
         
         return true;
+    }
+    
+    protected function _flushVars() {
+        if (isset($this->LdapObject->id)) {
+            $this->LdapObject->id = null;
+        }
+        
+        $this->sforceData = array();
+        $this->stagingData = array();
+        $this->ldapData = array();
+        $this->syncOperation = 'nothing';
+        
     }
     
     protected function _setGenerationFlags() {
@@ -179,8 +195,10 @@ class SyncObject extends AppModel {
             }
             $this->LdapObject->id = $userExistsCheck[0]['LdapObject']['dn'];
             $this->LdapObject->primaryKey = 'dn';
-        } elseif ($this->syncOperation != 'delete') {
+        } elseif ($this->sforceData['IsDeleted'] != 'true') {
             $this->syncOperation = 'create';
+        } else {
+            $this->syncOperation = 'nothing';
         }
         
         return true;
@@ -213,6 +231,19 @@ class SyncObject extends AppModel {
         );
         
         return $syncResult;
+    }
+    
+    public function getSyncPara() {
+        $syncPara = array(
+            'generateCN' => $this->generateCN,
+            'generateUid' => $this->generateUid,
+            'ldapObjectClass' => $this->ldapObjectClass,
+            'ldapSforceIdAttr' => $this->ldapSforceIdAttr,
+            'syncMap' => $this->syncMap,
+            'context' => $this->LdapObject->useTable
+        );
+        
+        return $syncPara;
     }
     
 }
