@@ -29,4 +29,12 @@
         echo '<p class="notice success">No records were deleted.</p>';
     }
 ?>
+        <h4>Left Unchanged:</h4>
+<?php
+    if (!empty($syncResults['unchanged'])) {
+        $this->Html->getSyncResultsTable($syncResults['unchanged']);
+    } else {
+        echo '<p class="notice success">No records were deleted.</p>';
+    }
+?>
 </div>

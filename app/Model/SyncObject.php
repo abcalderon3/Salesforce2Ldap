@@ -84,6 +84,8 @@ class SyncObject extends AppModel {
                 $createResult = $this->LdapObject->save($data);
                 if ($createResult) {
                     $this->log('SYNC: Created LDAP Object: ' . $createResult['LdapObject']['dn'], LOG_INFO);
+                    $this->LdapObject->id = $dn;
+                    $this->LdapObject->primaryKey = 'dn';
                 } else {
                     $this->log('SYNC: Failed to create LDAP Object: ' . $dn . '. Salesforce ID: '. $this->sforceData['Id'] . '. LDAP Error: ' . $this->LdapObject->getLdapError() . '.', LOG_ERR);
                 }
@@ -104,6 +106,7 @@ class SyncObject extends AppModel {
                         $this->log('SYNC: Failed to update LDAP Object: ' . $this->LdapObject->id, LOG_ERR);
                     }
                 } else {
+                    $this->syncOperation = 'unchanged';
                     $this->log('SYNC: LDAP Object ' . $this->LdapObject->id . ' left unchanged.', LOG_INFO);
                 }
                 break;
@@ -112,8 +115,9 @@ class SyncObject extends AppModel {
                 $deleteResult = $this->LdapObject->delete($this->LdapObject->id);
                 if ($deleteResult) {
                     $this->log('SYNC: Deleted LDAP Object: ' . $id, LOG_INFO);
+                    $this->LdapObject->id = $id;
                 } else {
-                    $this->log('SYNC: Failed to delete LDAP Object: ' . $this->LdapObject->id, LOG_ERR);
+                    $this->log('SYNC: Failed to delete LDAP Object: ' . $id , LOG_ERR);
                     $ldapError = $this->LdapObject->getLdapError();
                     if (!empty($ldapError)) {
                         $this->log($ldapError, LOG_ERR);
@@ -141,6 +145,9 @@ class SyncObject extends AppModel {
     protected function _flushVars() {
         if (isset($this->LdapObject->id)) {
             $this->LdapObject->id = null;
+        }
+        if (isset($this->LdapObject->primaryKey)) {
+            $this->LdapObject->primaryKey = 'uid';
         }
         
         $this->sforceData = array();

@@ -11,29 +11,42 @@ class SforceObject extends AppModel {
     public $useDbConfig = 'sforce';
     public $useTable = false;
 
-    function syncContacts() {
+    public function syncContacts() {
         $sforce = $this->getDataSource();
         $SOQL = $sforce->getConfigSOQL();
         
-        // ABC3TODO: Modify to take better advantage of the batched processing from Salesforce
-        $resultSet = $this->queryBatch($SOQL);
+        $done = false;
+        $queryResult = $this->query($SOQL);
         
         $syncResults = array(
             'create' => array(),
             'update' => array(),
-            'delete' => array()
+            'delete' => array(),
+            'unchanged' => array()
         );
-        
-        foreach ($resultSet as $result) {
-            $this->SyncObject->newSyncObject($result);
-            $this->SyncObject->performSyncOperation();
-            $syncResults = array_merge_recursive($syncResults, $this->SyncObject->getSyncResult());
+
+        if ($queryResult->size > 0) {
+            while (!$done) {
+                foreach ($queryResult->records as $record) {
+                    $sObject = new SObject($record);
+                    $result = get_object_vars($sObject->fields);
+                    $result['Id'] = $sObject->Id;
+                    $this->SyncObject->newSyncObject($result);
+                    $this->SyncObject->performSyncOperation();
+                    $syncResults = array_merge_recursive($syncResults, $this->SyncObject->getSyncResult());
+                }
+                if ($queryResult->done != true) {
+                    $this->queryMore($queryResult);
+                } else {
+                    $done = true;
+                }
+            }
         }
         
         return $syncResults;
     }
     
-    function getContacts() {
+    public function getContacts() {
         $sforce = $this->getDataSource();
         $SOQL = $sforce->getConfigSOQL();
         $resultSet = $this->queryBatch($SOQL);
@@ -41,7 +54,7 @@ class SforceObject extends AppModel {
         return $resultSet;
     }
 
-    function queryBatch($SOQL = NULL) {
+    public function queryBatch($SOQL = NULL) {
         $resultSet = array();
         $done = false;
 
