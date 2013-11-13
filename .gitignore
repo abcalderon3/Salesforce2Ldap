@@ -8,6 +8,8 @@
 /build
 /dist
 /tags
+/app/Vendor/soapclient/partner_abc3.wsdl.xml
+/app/Vendor/soapclient/enterprise_abc3.wsdl.xml
 
 # OS generated files #
 ######################
