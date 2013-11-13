@@ -58,14 +58,14 @@ Configuration Steps
     * ldapObjectClass (The object class you use to create new users in LDAP. Most cases should be left to inetOrgPerson.)
     * ldapSforceIdAttr (The attribute on your LDAP object that should hold the Salesforce ID. This is required, in order to ensure unique synchronization between Salesforce objects and LDAP objects. Default is employeeNumber.)
     * syncMap (The array that maps LDAP attributes (the keys) to Salesforce fields (the values). Update this array to include more fields from Salesforce. IMPORTANT: Make sure that the fields specified here are being pulled in your SOQL in the database configuration!)
-* Open your web browser to http://_your-server-address/Salesforce2Ldap/sforce_objects/.
+* Open your web browser to http://*your-server-address*/Salesforce2Ldap/sforce\_objects/.
 * Check that the configuration will fit your scenario.
 * Click the "Run Sync" button.
 
 Unit Tests
 ----------
 
-Unit tests can be performed through CakePHP's testing facility (good for checking your configuration). To run the tests, navigate to http://_your-server-address/Salesforce2Ldap/test.php
+Unit tests can be performed through CakePHP's testing facility (good for checking your configuration). To run the tests, navigate to http://*your-server-address*/Salesforce2Ldap/test.php
 
 Links
 -----
