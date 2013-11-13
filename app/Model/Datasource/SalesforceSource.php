@@ -3,23 +3,34 @@
 /**
  * SalesForceSource 
  *  
- * A Slaesforce SOAP Client Datasource 
- * Connects to a Salesforce enterprise SOAP server using the configured wsdl file 
+ * A Salesforce SOAP Client Datasource 
+ * Connects to a Salesforce partner SOAP server using the configured wsdl file 
  * 
- * PHP Version 5 
+ * PHP 5 
  * 
- * Copyright 2009 Chris Roberts Ph.D, www.osxgnu.org 
+ * Copyright (c) 2013 Adrian Calderon
+ *
+ * LICENSE: Licensed under The MIT License
+ * For full copyright and license information, please see the LICENSE.txt file.
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @author      Adrian Calderon <abc3 [at] adriancalderon [dot] org>
+ * @copyright   Copyright (c) 2013 Adrian Calderon
+ * @link        https://github.com/abcalderon3/Salesforce2Ldap
+ * @license     http://opensource.org/licenses/MIT MIT License
  * 
- * This library is free software: you can redistribute it and/or modify 
- * it.  
+ * Original Copyright and License Statement follows. This source code was
+ * modified from the original and is being redistributed, also under the MIT
+ * License.
  * 
- * This library is distributed in the hope that it will be useful, 
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ * * Copyright 2009 Chris Roberts Ph.D, www.osxgnu.org 
  * 
+ * * This library is free software: you can redistribute it and/or modify 
+ * * it.  
  * 
- *   
- * 
+ * * This library is distributed in the hope that it will be useful, 
+ * * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 class SalesforceSource extends DataSource {
 

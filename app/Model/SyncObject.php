@@ -1,40 +1,67 @@
 <?php
+/**
+ * Synchronization Object Model
+ *
+ * Representation of the synchronization between a Salesforce object and an LDAP
+ * object. Performs all data validation, translation, and synchronization.
+ * Creates, updates, or deletes LDAP objects, based on detected changes in 
+ * Salesforce.
+ *
+ * PHP 5
+ *
+ * Copyright (c) 2013 Adrian Calderon
+ *
+ * LICENSE: Licensed under The MIT License
+ * For full copyright and license information, please see the LICENSE.txt file.
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @author      Adrian Calderon <abc3 [at] adriancalderon [dot] org>
+ * @copyright   Copyright (c) 2013 Adrian Calderon
+ * @link        https://github.com/abcalderon3/Salesforce2Ldap
+ * @license     http://opensource.org/licenses/MIT MIT License
+ */
 
 class SyncObject extends AppModel {
     
     public $hasOne = 'LdapObject';
     
+    /**
+     * @var array Holds incoming Salesforce data
+     * @var array Holds data as it is being mapped between Salesforce and LDAP
+     * @var array Holds outgoing LDAP data
+     */
     public $sforceData = array();
-    
     protected $stagingData = array();
-    
     public $ldapData = array();
     
     /**
      * Determines the operation to be performed during sync
      * 
-     * Options:  create, update, delete
+     * Options:  create, update, delete, nothing, unchanged
      * 
      * @var string $syncOperation
      */
     public $syncOperation = 'nothing';
     
-    // protected $objectDN = NULL;
-    
     /**
-     * Flag for generating the CN from FirstName and LastName
-     * 
-     * ABC3TODO: Make configurable
-     * 
-     * @var boolean $generateCN
-     * @var boolean $generateUid
+     * @var boolean Flag for generating the CN from FirstName and LastName
+     * @var boolean Flag for generating the UID from the first letter of FirstName and LastName
      */
     public $generateCN = true;
     public $generateUid = true;
     
+    /**
+     * @var string Default objectclass to be used to add new LDAP objects
+     * @var string Default attribute in LDAP that should hold the Sforce ID (Custom attribute is recommended)
+     */
     public $ldapObjectClass = 'inetOrgPerson';
     public $ldapSforceIdAttr = 'employeeNumber';
     
+    /**
+     * Sets up the relationships between LDAP attributes and Salesforce fields.
+     * 
+     * @var array Array of matching LDAP attributes to Salesforce fields
+     */
     public $syncMap = array(
         'cn' => 'FullName',
         'sn' => 'LastName',
@@ -43,6 +70,14 @@ class SyncObject extends AppModel {
         'mail' => 'Email'
     );
     
+    /**
+     * Sets up a new SyncObject
+     * 
+     * Flushes any lingering properties from previous sync operations. Prepares
+     * the data required to perform the sync operation.
+     * 
+     * @param array $result Incoming Salesforce data
+     */
     public function newSyncObject(array $result) {
         $this->_flushVars();
         $this->sforceData = $result;
@@ -55,6 +90,14 @@ class SyncObject extends AppModel {
         $this->prepareSyncOperation();
     }
     
+    /**
+     * Prepares for the sync operation
+     * 
+     * Generates any necessary data (e.g., CN and UID). Validates Salesforce data.
+     * Sets the sync operation.
+     * 
+     * @throws CakeException Errors if invalid or inadequate Salesforce data is provided
+     */
     public function prepareSyncOperation() {
         if (!$this->_transformSforceData()) {
             $this->log('SYNC: Failed to transform Salesforce data. Unable to generate LDAP attributes.', LOG_ERR);
@@ -74,16 +117,27 @@ class SyncObject extends AppModel {
         }
     }
     
+    /**
+     * Performs the sync operation
+     * 
+     * Does the heavy lifting of doing either a create, update, or delete
+     * operation. 
+     */
     public function performSyncOperation() {
         switch ($this->syncOperation) {
             case 'create':
+                // Sets up the data array
                 $data['LdapObject'] = $this->stagingData;
                 $dn = 'uid' . '=' . $this->stagingData['uid'] . ',' . $this->LdapObject->getLdapContext();
                 $data['LdapObject']['dn'] = $dn;
                 $data['LdapObject']['objectclass'] = $this->ldapObjectClass;
+                
+                // Save the data
                 $createResult = $this->LdapObject->save($data);
+                
                 if ($createResult) {
                     $this->log('SYNC: Created LDAP Object: ' . $createResult['LdapObject']['dn'], LOG_INFO);
+                    // Sets the properties on the LdapObject for reporting the sync result
                     $this->LdapObject->id = $dn;
                     $this->LdapObject->primaryKey = 'dn';
                 } else {
@@ -94,18 +148,22 @@ class SyncObject extends AppModel {
                 // Push everything to lower case, so String comparison will be accurate.
                 $stagingObject = array_change_key_case($this->stagingData, CASE_LOWER);
                 $ldapObject = array_change_key_case($this->ldapData, CASE_LOWER);
-                // Diff the arrays. Should be efficient. Since we are doing a one way push from SalesForce
-                // to DSEE, this also provides a clean way to get exactly the attributes we want to update.
+                // Diff the arrays. Should be efficient. Since we are doing a one way push from Salesforce
+                // to LDAP, this also provides a clean way to get exactly the attributes we want to update.
                 $diffObject = array_diff_assoc($stagingObject, $ldapObject);
                 if (!empty($diffObject)) {
                     $data['LdapObject'] = $diffObject;
+                    
+                    // Save the data
                     $updateResult = $this->LdapObject->save($data);
+                    
                     if ($updateResult) {
                         $this->log('SYNC: Updated LDAP Object: ' . $this->LdapObject->id, LOG_INFO);
                     } else {
                         $this->log('SYNC: Failed to update LDAP Object: ' . $this->LdapObject->id, LOG_ERR);
                     }
                 } else {
+                    // Sets the sync operation, so unchanged records (which is the usual case) are separately reported
                     $this->syncOperation = 'unchanged';
                     $this->log('SYNC: LDAP Object ' . $this->LdapObject->id . ' left unchanged.', LOG_INFO);
                 }
@@ -115,6 +173,7 @@ class SyncObject extends AppModel {
                 $deleteResult = $this->LdapObject->delete($this->LdapObject->id);
                 if ($deleteResult) {
                     $this->log('SYNC: Deleted LDAP Object: ' . $id, LOG_INFO);
+                    // Sets id on the LdapObject for reporting the sync result
                     $this->LdapObject->id = $id;
                 } else {
                     $this->log('SYNC: Failed to delete LDAP Object: ' . $id , LOG_ERR);
@@ -132,6 +191,14 @@ class SyncObject extends AppModel {
         }
     }
     
+    /**
+     * Validates the provided Salesforce data
+     * 
+     * Checks that Salesforce data is provided for each LDAP attribute to be
+     * synced, as defined by the $syncMap property.
+     * 
+     * @return boolean Validated flag
+     */
     public function validateSforceData() {
         foreach($this->syncMap as $sforceField) {
             if (!array_key_exists($sforceField, $this->sforceData)) {
@@ -142,6 +209,9 @@ class SyncObject extends AppModel {
         return true;
     }
     
+    /**
+     * Resets the properties on the LdapObject and SyncObject
+     */
     protected function _flushVars() {
         if (isset($this->LdapObject->id)) {
             $this->LdapObject->id = null;
@@ -157,6 +227,9 @@ class SyncObject extends AppModel {
         
     }
     
+    /**
+     * Checks to make sure there is data for generating the CN and UID
+     */
     protected function _setGenerationFlags() {
         $this->generateCN = ($this->generateCN && array_key_exists('FirstName', $this->sforceData) && array_key_exists('LastName', $this->sforceData)) ? true : false;
         
@@ -164,6 +237,11 @@ class SyncObject extends AppModel {
         
     }
     
+    /**
+     * Generates CN and UID, based on flags
+     * 
+     * @return boolean true
+     */
     protected function _transformSforceData() {
         if ($this->generateCN) {
             $this->sforceData['FullName'] = $this->sforceData['FirstName'] . ' ' . $this->sforceData['LastName'];
@@ -176,12 +254,26 @@ class SyncObject extends AppModel {
         return true;
     }
     
+    /**
+     * Sets the Staging Data based on $syncMap
+     * 
+     * @return boolean Flag whether the stagingData is set
+     */
     protected function _setStagingData() {
         $this->stagingData = $this->_setSyncMap($this->sforceData);
         
         return isset($this->stagingData) ? true : false;
     }
     
+    /**
+     * Determines which sync operation to perform
+     * 
+     * Queries LDAP for the exact Salesforce object provided (based on Sforce ID).
+     * If an exisiting LDAP object is found that corresponds to the Salesforce ID,
+     * determines whether the object has been deleted in Salesforce.
+     * 
+     * @return boolean Flag for whether the sync operation is set properly
+     */
     protected function _setOperation() {
         $filter = '(&(objectclass='.$this->ldapObjectClass.')('.$this->ldapSforceIdAttr.'='.$this->sforceData['Id'].'))';
         $retAttrs = array_keys($this->syncMap);
@@ -215,7 +307,7 @@ class SyncObject extends AppModel {
      * Creates an array to associate LDAP attributes to Salesforce data.
      *
      * @param array $sforceData
-     * @return array $newObject
+     * @return array LDAP data mapped to Salesforce data
      */
     protected function _setSyncMap($sforceData) {
         $mappedData = array();
@@ -240,6 +332,11 @@ class SyncObject extends AppModel {
         return $syncResult;
     }
     
+    /**
+     * Gets the current parameters used in sync
+     * 
+     * @return array Array of sync parameters
+     */
     public function getSyncPara() {
         $syncPara = array(
             'generateCN' => $this->generateCN,

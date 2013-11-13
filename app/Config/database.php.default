@@ -61,25 +61,53 @@
  */
 class DATABASE_CONFIG {
 
-	public $default = array(
-		'datasource' => 'Database/Mysql',
-		'persistent' => false,
-		'host' => 'localhost',
-		'login' => 'user',
-		'password' => 'password',
-		'database' => 'database_name',
-		'prefix' => '',
-		//'encoding' => 'utf8',
-	);
+    public $ldap = array(
+        'datasource' => 'LdapSource',
+        'database' => '',
+        'host' => '127.0.0.1',
+        'port' => 389,
+        'basedn' => 'dc=example,dc=com',
+        'context' => 'ou=Users', // The OU you want LDAP objects to be created in
+        'login' => '',
+        'password' => '',
+        'type' => 'Netscape', // Options:  'Netscape', 'OpenLDAP', or 'ActiveDirectory'
+        'version' => 3,
+        'tls' => false
+    );
+    
+    public $sforce = array(
+        'datasource' => 'SalesforceSource',
+        'wsdl' => 'partner.wsdl.xml', // File name (not path) of your WSDL file
+        'username' => '',
+        'password' => '', // Follows Salesforce API standard (i.e., your password + your security token)
+        'queryBatchSize' => 200,
+        'SOQL' => 'SELECT Id, FirstName, LastName, Email, IsDeleted FROM Contact' // SOQL to get the correct fields from Salesforce
+    );
+    
+    // Required for unit testing
+    public $test_ldap = array(
+        'datasource' => 'LdapSource',
+        'database' => '',
+        'prefix' => null, // Used only in unit testing
+        'host' => '127.0.0.1',
+        'port' => 389,
+        'basedn' => 'dc=example,dc=com',
+        'context' => 'ou=tests',
+        'login' => '',
+        'password' => '',
+        'type' => 'Netscape',
+        'version' => 3,
+        'tls' => false
+    );
+    
+    public $test_sforce = array(
+        'datasource' => 'SalesforceSource',
+        'prefix' => null, // Used only in unit testing
+        'wsdl' => 'partner.wsdl.xml',
+        'username' => '',
+        'password' => '',
+        'queryBatchSize' => 25,
+        'SOQL' => 'SELECT Id, FirstName, LastName, Email, IsDeleted FROM Contact WHERE FirstName = \'DELETE\' AND IsDeleted = FALSE'
+    );
 
-	public $test = array(
-		'datasource' => 'Database/Mysql',
-		'persistent' => false,
-		'host' => 'localhost',
-		'login' => 'user',
-		'password' => 'password',
-		'database' => 'test_database_name',
-		'prefix' => '',
-		//'encoding' => 'utf8',
-	);
 }

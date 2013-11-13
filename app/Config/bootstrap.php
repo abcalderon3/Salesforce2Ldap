@@ -72,8 +72,7 @@ Cache::config('default', array('engine' => 'File'));
  *
  */
 // CakePlugin::loadAll(); // Loads all plugins at once
-CakePlugin::load('Datasources');
-CakePlugin::load('DebugKit');
+// CakePlugin::load('DebugKit');
 
 /**
  * You can attach event listeners to the request lifecycle as Dispatcher Filter . By Default CakePHP bundles two filters:
