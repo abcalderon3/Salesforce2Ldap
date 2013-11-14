@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Salesforce2ldap : Salesforce to LDAP Synchronization" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Salesforce2ldap</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/abcalderon3/Salesforce2Ldap">View on GitHub</a>
+
+          <h1 id="project_title">Salesforce2ldap</h1>
+          <h2 id="project_tagline">Salesforce to LDAP Synchronization</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/abcalderon3/Salesforce2Ldap/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/abcalderon3/Salesforce2Ldap/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="salesforce2ldap" class="anchor" href="#salesforce2ldap"><span class="octicon octicon-link"></span></a>Salesforce2Ldap</h1>
+
+<p>Salesforce2Ldap is an open source application for synchronizing data from Salesforce to an LDAP repository.</p>
+
+<p>Powered by the <a href="http://www.cakephp.org">CakePHP 2.4</a> MVC framework, and distributed under the MIT License.</p>
+
+<h2>
+<a name="notes-from-developer" class="anchor" href="#notes-from-developer"><span class="octicon octicon-link"></span></a>Notes from Developer</h2>
+
+<p>This application is intended as a proof-of-concept for one-way synchronization from Salesforce to LDAP. It is not recommended for use
+in a production environment.</p>
+
+<p>I am interested in gauging community reaction and interest for further development. If you have the opportunity to test the
+application in various environments or provide your specific scenarios, I'd appreciate the feedback.</p>
+
+<p>I developed this based on a particular scenario of holding identity-related information in Salesforce that was required for LDAP
+authentication purposes in other applications. This provides the integration to maintain the identity data in Salesforce and provide
+that data in an LDAP repository for other authentication scenarios (i.e., Contact records in Salesforce who are also end-users for
+other web applications). </p>
+
+<h2>
+<a name="requirements" class="anchor" href="#requirements"><span class="octicon octicon-link"></span></a>Requirements</h2>
+
+<ul>
+<li>Web server (Apache recommended)</li>
+<li>PHP 5.3 or higher</li>
+<li>
+<a href="http://www.salesforce.com">Salesforce</a> instance</li>
+<li>LDAP Server (<a href="http://directory.apache.org/">ApacheDS</a> recommended)</li>
+</ul><h2>
+<a name="configuration-steps" class="anchor" href="#configuration-steps"><span class="octicon octicon-link"></span></a>Configuration Steps</h2>
+
+<ul>
+<li>Download the zip file from Github and extract to your web server.</li>
+<li>Direct your web server to use the <a href="/app/webroot">app/webroot</a> folder as webroot.</li>
+<li>Retrieve the Partner WSDL file for your Salesforce instance. Follow <a href="https://help.salesforce.com/apex/HTViewHelpDoc?id=dev_wsdl.htm&amp;language=en_US">these directions</a>.</li>
+<li>Copy your Partner WSDL file to <a href="/app/Vendor/soapclient/">/app/Vendor/soapclient/</a>. Example is provided as <a href="/app/Vendor/soapclient/partner.wsdl.xml">partner.wsdl.xml</a>.</li>
+<li>Update the configuration parameters in <a href="/app/Config/database.php.default">database.php</a> (An example file is provided as "database.php.default". Rename this file as "database.php".). You will need to update the following parameters:
+
+<ul>
+<li>LDAP
+
+<ul>
+<li>Host of the LDAP Server (FQDN or IP Address)</li>
+<li>Port (Default:  389)</li>
+<li>Base DN</li>
+<li>Login (DN of a user with CRUD permissions in LDAP)</li>
+<li>Password (Password for above user)</li>
+<li>Type
+
+<ul>
+<li>Netscape:  Use for most LDAP servers, including ApacheDS</li>
+<li>OpenLDAP:  Use for OpenLDAP servers</li>
+<li>ActiveDirectory:  Use for Active Directory servers (untested)</li>
+</ul>
+</li>
+<li>Version (Default:  3)</li>
+<li>TLS True/False (Default: False)</li>
+</ul>
+</li>
+<li>Salesforce
+
+<ul>
+<li>WSDL (File name of your Salesforce Partner WSDL file, as copied above. This should only be the file name (i.e., "partner.wsdl.xml") not the entire path.)</li>
+<li>User Name (User name of an administrator-level Salesforce user)</li>
+<li>Password (Per Salesforce API requirements, this will be the password of the above user concatenated with the user's security token. <a href="http://www.salesforce.com/us/developer/docs/api/Content/sforce_api_concepts_security.htm">Click here for more information</a>.)</li>
+<li>SOQL (The SOQL that pulls the correct fields you would like to sync to LDAP.)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Update the synchronization parameters in <a href="/app/Model/SyncObject.php">SyncObject.php</a> to fulfill your synchronization scenario.
+
+<ul>
+<li>generateCN (Set to true if you are only pulling FirstName and LastName from Salesforce and would like the application to generate a CN value of "FirstName LastName".)</li>
+<li>generateUid (Set to true if you do not have a predefined Salesforce field for the object's user name and would like the application to generate a Uid value of "FirstInitialLastName".)</li>
+<li>ldapObjectClass (The object class you use to create new users in LDAP. Most cases should be left to inetOrgPerson.)</li>
+<li>ldapSforceIdAttr (The attribute on your LDAP object that should hold the Salesforce ID. This is required, in order to ensure unique synchronization between Salesforce objects and LDAP objects. Default is employeeNumber.)</li>
+<li>syncMap (The array that maps LDAP attributes (the keys) to Salesforce fields (the values). Update this array to include more fields from Salesforce. IMPORTANT: Make sure that the fields specified here are being pulled in your SOQL in the database configuration!)</li>
+</ul>
+</li>
+<li>Open your web browser to http://<em>your-server-address</em>/Salesforce2Ldap/sforce_objects/.</li>
+<li>Check that the configuration will fit your scenario.</li>
+<li>Click the "Run Sync" button.</li>
+</ul><h2>
+<a name="unit-tests" class="anchor" href="#unit-tests"><span class="octicon octicon-link"></span></a>Unit Tests</h2>
+
+<p>Unit tests can be performed through CakePHP's testing facility (good for checking your configuration). To run the tests, navigate to http://<em>your-server-address</em>/Salesforce2Ldap/test.php</p>
+
+<h2>
+<a name="links" class="anchor" href="#links"><span class="octicon octicon-link"></span></a>Links</h2>
+
+<ul>
+<li><a href="https://github.com/abcalderon3/Salesforce2Ldap">Github Repository</a></li>
+</ul><h2>
+<a name="contact" class="anchor" href="#contact"><span class="octicon octicon-link"></span></a>Contact</h2>
+
+<ul>
+<li>Developer:  Adrian Calderon abc3 [at] adriancalderon [dot] org</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Salesforce2ldap maintained by <a href="https://github.com/abcalderon3">abcalderon3</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
