@@ -111,9 +111,9 @@ other web applications). </p>
 <ul>
 <li><span class="tech">$generateCN</span> (Set to true if you are only pulling FirstName and LastName from Salesforce and would like the application to generate a CN value of "FirstName LastName".)</li>
 <li><span class="tech">$generateUid</span> (Set to true if you do not have a predefined Salesforce field for the object's user name and would like the application to generate a Uid value of "FirstInitialLastName".)</li>
-<li><span class="tech">ldapObjectClass</span> (The object class you use to create new users in LDAP. Most cases should be left to inetOrgPerson.)</li>
-<li><span class="tech">ldapSforceIdAttr</span> (The attribute on your LDAP object that should hold the Salesforce ID. This is required, in order to ensure unique synchronization between Salesforce objects and LDAP objects. Default is employeeNumber.)</li>
-<li>syncMap (The array that maps LDAP attributes (the keys) to Salesforce fields (the values). Update this array to include more fields from Salesforce. IMPORTANT: Make sure that the fields specified here are being pulled in your SOQL in the database configuration!)</li>
+<li><span class="tech">$ldapObjectClass</span> (The object class you use to create new users in LDAP. Most cases should be left to inetOrgPerson.)</li>
+<li><span class="tech">$ldapSforceIdAttr</span> (The attribute on your LDAP object that should hold the Salesforce ID. This is required, in order to ensure unique synchronization between Salesforce objects and LDAP objects. Default is employeeNumber.)</li>
+<li><span class="tech">$syncMap</span> (The array that maps LDAP attributes (the keys) to Salesforce fields (the values). Update this array to include more fields from Salesforce. IMPORTANT: Make sure that the fields specified here are being pulled in your SOQL in the database configuration!)</li>
 </ul>
 </li>
 <li>Open your web browser to http://<em>your-server-address</em>/Salesforce2Ldap/sforce_objects/.</li>
